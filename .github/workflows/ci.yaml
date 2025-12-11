@@ -7,18 +7,20 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentals
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Image
@@ -26,9 +28,15 @@ jobs:
           docker build -t datagrokr-intern-devops .
 
       - name: Tag Image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: datagrokr-intern-devops
         run: |
-          docker tag datagrokr-intern-devops:latest ${{ steps.login-ecr.outputs.registry }}/datagrokr-intern-devops:latest
+          docker tag datagrokr-intern-devops:latest $REGISTRY/$REPOSITORY:latest
 
       - name: Push Image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: datagrokr-intern-devops
         run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/datagrokr-intern-devops:latest
+          docker push $REGISTRY/$REPOSITORY:latest
